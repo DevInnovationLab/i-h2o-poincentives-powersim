@@ -26,12 +26,10 @@ Output: MDE tables (rows = baseline compliance, columns = AR(1) persistence) for
 - `generate_data.py` — DGP: staggered rollout panel generation
 - `estimate.py` — Site-level DiD estimator
 - `run_simulation.py` — Main entry point: runs power sweep and outputs MDE tables
-- `run_power_sweep.py` — Lower-level parallel sweep with `--hpc` mode
-- `visualize.py` — Plots and MDE tables from power results
-- `submit_hpc.sh` — SLURM submission
+- `submit_hpc.sh` — SLURM submission (single node, 48 cores)
 
 ## Rules
 - **No TWFE** — only use Callaway & Sant'Anna style DiD
-- **Don't run large simulations locally** — use HPC for full sweeps
-- **Always keep README.md and INSTRUCTIONS.md up to date** when making changes to the codebase, parameters, or run procedures
+- **Never run simulations locally** — always use HPC
+- **Always keep README.md up to date** when making changes to the codebase, parameters, or run procedures
 - **Commit with descriptive messages** after significant code changes

@@ -250,29 +250,19 @@ pip install -r requirements.txt
 
 Dependencies: numpy, pandas, scipy, matplotlib, seaborn, tqdm.
 
-### 5.2 Running the Simulation
+### 5.2 Running on HPC (SLURM)
 
-```bash
-# Run power sweep and output MDE tables
-python run_simulation.py --n_sims 1000
-
-# Quick test (fewer sims, faster):
-python run_simulation.py --n_sims 100
-```
-
-Output:
-- MDE tables printed to console (rows = baseline compliance, columns = AR(1) persistence)
-- `output/power_results.csv` — raw power estimates for all parameter combos
-- `output/mde_table_6_months.csv` — MDE table for 6-month duration
-- `output/mde_table_1_year.csv` — MDE table for 1-year duration
-
-### 5.3 HPC Usage (SLURM)
-
-For full precision (1,000 sims), use the HPC cluster. The included `submit_hpc.sh` is configured for the UChicago RCC MidwaySSD partition:
+All simulations should be run on HPC. The included `submit_hpc.sh` is configured for the UChicago RCC MidwaySSD partition (single node, 48 cores):
 
 ```bash
 sbatch submit_hpc.sh
 ```
+
+Output:
+- MDE tables printed to log (rows = baseline compliance, columns = AR(1) persistence)
+- One MDE table per (duration, Hawthorne effect) combination
+- `output/power_results.csv` — raw power estimates for all 1,800 parameter combos
+- `output/mde_table_*.csv` — MDE tables at 80% power
 
 ---
 
@@ -280,9 +270,8 @@ sbatch submit_hpc.sh
 
 | File | Description |
 |------|-------------|
-| `output/power_results.csv` | Power estimates for all parameter combos and both durations |
-| `output/mde_table_6_months.csv` | MDE at 80% power for 6-month study |
-| `output/mde_table_1_year.csv` | MDE at 80% power for 1-year study |
+| `output/power_results.csv` | Power estimates for all 1,800 parameter combos (both durations) |
+| `output/mde_table_*.csv` | MDE at 80% power — one table per (duration, Hawthorne effect) combination |
 
 ---
 
@@ -295,9 +284,7 @@ sbatch submit_hpc.sh
 | `generate_data.py` | Data generating process — staggered rollout panel generation |
 | `estimate.py` | Difference-in-differences estimator |
 | `run_simulation.py` | **Main entry point** — runs power sweep and outputs MDE tables |
-| `run_power_sweep.py` | Lower-level parallel sweep with `--hpc` mode |
-| `visualize.py` | Plots and MDE tables from power results |
-| `submit_hpc.sh` | SLURM job submission script for UChicago RCC |
+| `submit_hpc.sh` | SLURM job submission script for UChicago RCC (single node, 48 cores) |
 | `requirements.txt` | Python dependencies |
 
 ---
