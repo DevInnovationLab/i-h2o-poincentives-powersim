@@ -8,7 +8,7 @@ import pandas as pd
 # Global settings
 # ---------------------------------------------------------------------------
 N_MEASUREMENTS = 2          # independent chlorine measurements per week
-STUDY_END_WEEK = 78         # calendar week when data collection ends (18 months from AP start)
+STUDY_END_WEEK = 52         # calendar week when data collection ends (1 year from AP start)
 N_SIMS = 1000
 SEED = 42
 
@@ -23,18 +23,10 @@ TREATMENT_REL_START = TRAINING_REL_START + TRAINING_WEEKS  # relative week 9
 # ---------------------------------------------------------------------------
 AP_CONFIG = {
     'name': 'AP',
-    'install_schedule': [2] + [6] * 8,   # 50 villages over 9 weeks
+    'install_schedule': [5] * 8,           # 40 villages over 8 weeks at constant rate
     'cal_week_offset': 0,                  # starts at calendar week 1
-    'n_sites': 50,
-    'n_treated': 25,
-}
-
-ODISHA_CONFIG = {
-    'name': 'Odisha',
-    'install_schedule': [2] * 25,          # 50 villages, 2/week over 25 weeks
-    'cal_week_offset': 12,                 # starts 3 months (13 weeks) after AP; first install at cal week 13
-    'n_sites': 50,
-    'n_treated': 25,
+    'n_sites': 40,
+    'n_treated': 20,
 }
 
 
@@ -80,7 +72,7 @@ def sigma_from_mu(mu):
     return SIGMA_FACTOR * np.sqrt(mu * (1 - mu))
 
 # ---------------------------------------------------------------------------
-# Single-state parameter grid (AP only, backward compatible)
+# Parameter grid
 # ---------------------------------------------------------------------------
 # NOTE: target_att is the expected dynamic effect on outcomes (the estimand).
 # tau is derived using the finite-horizon AR(1) amplification formula.
@@ -88,36 +80,6 @@ PARAM_GRID = {
     'mu_baseline': _SWEEP['mu_baseline'],
     'target_att': _SWEEP['target_att'],
     'rho': _SWEEP['rho'],
-    'h_init': _SWEEP['h_init'],
 }
 
-# ---------------------------------------------------------------------------
-# Pooled (two-state) parameter grid
-# ---------------------------------------------------------------------------
-POOLED_PARAM_GRID = {
-    'mu_baseline_ap': _SWEEP['mu_baseline_ap'],
-    'mu_baseline_od': _SWEEP['mu_baseline_od'],
-    'target_att': _SWEEP['target_att'],
-    'rho': _SWEEP['rho'],
-    'h_init': _SWEEP['h_init'],
-    'effect_ratio': _SWEEP['effect_ratio'],
-}
-
-# ---------------------------------------------------------------------------
-# Comprehensive comparison grid
-# ---------------------------------------------------------------------------
-# Sweeps across: mode (AP-only vs pooled), n_measurements, study duration
-STUDY_DURATIONS = {
-    f'{int(w)}wk': int(w) for w in _SWEEP['study_end_week']
-}
-# Override with readable labels
-STUDY_DURATIONS = {'6mo': 26, '1yr': 52, '1.5yr': 78}
-
-COMPARISON_N_MEASUREMENTS = [int(v) for v in _SWEEP['n_measurements']]
-
-COMPARISON_PARAM_GRID = {
-    'mu_baseline': _SWEEP['mu_baseline_ap'],
-    'target_att': _SWEEP['target_att'],
-    'rho': _SWEEP['rho'],
-    'h_init': _SWEEP['h_init'],
-}
+STUDY_DURATIONS = {'6 months': 26, '1 year': 52}

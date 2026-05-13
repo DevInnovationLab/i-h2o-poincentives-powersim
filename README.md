@@ -1,6 +1,6 @@
 # PO Incentives Power Simulation
 
-Statistical power analysis for a staggered rollout randomized controlled trial (RCT) measuring the effect of financial incentives on pump operator (PO) chlorination behavior across 50 villages.
+Statistical power analysis for a staggered rollout randomized controlled trial (RCT) measuring the effect of financial incentives on pump operator (PO) chlorination behavior across 40 villages in Andhra Pradesh.
 
 ---
 
@@ -8,7 +8,7 @@ Statistical power analysis for a staggered rollout randomized controlled trial (
 
 ### 1.1 Overview
 
-The intervention installs Inline Chlorine (ILC) devices at 50 village water points and evaluates whether paying pump operators for verified chlorination increases chlorine presence in the water supply. The study uses a staggered rollout design where villages are enrolled over time, followed by a within-village randomization to treatment (payments) or control (monitoring only).
+The intervention installs Inline Chlorine (ILC) devices at 40 village water points in Andhra Pradesh and evaluates whether paying pump operators for verified chlorination increases chlorine presence in the water supply. The study uses a staggered rollout design where villages are enrolled over time, followed by a within-village randomization to treatment (payments) or control (monitoring only).
 
 ### 1.2 Timeline
 
@@ -19,27 +19,26 @@ Each village passes through four phases, staggered by its installation date:
 | **Installation** | Week 0 | ILC device installed at village water point |
 | **Stabilization** | Weeks 1–4 | Equipment settles in; no monitoring or data collection |
 | **Training & Monitoring** | Weeks 5–8 | PO trained on digital self-reporting app; independent chlorine measurements begin (default 2x/week); this serves as the **pre-treatment baseline** |
-| **Treatment Period** | Weeks 9 onward (variable duration) | Random half of villages begin receiving payments for chlorine presence; monitoring continues for all villages. Duration depends on installation date and study end week (default 78 weeks from AP start). |
+| **Treatment Period** | Weeks 9 onward (variable duration) | Random half of villages begin receiving payments for chlorine presence; monitoring continues for all villages. Duration depends on installation date and study end week (6 months or 1 year from AP start). |
 
 ### 1.3 Installation Schedule
 
-Villages are enrolled over 9 calendar weeks:
+Villages are enrolled at a constant rate over 8 calendar weeks:
 
-- **Calendar week 1:** 2 villages installed
-- **Calendar weeks 2–9:** 6 villages installed per week
-- **Total:** 2 + (6 × 8) = 50 villages
+- **Calendar weeks 1–8:** 5 villages installed per week
+- **Total:** 5 × 8 = 40 villages
 
-Because installation is staggered, each village's phases occur at different calendar times. A village installed in calendar week 1 begins treatment at calendar week 9, while a village installed in calendar week 9 begins treatment at calendar week 17.
+Because installation is staggered, each village's phases occur at different calendar times. A village installed in calendar week 1 begins treatment at calendar week 9, while a village installed in calendar week 8 begins treatment at calendar week 16.
 
 ### 1.4 Treatment Assignment
 
 At the start of each village's treatment period (relative week 9), villages are randomly assigned:
-- **25 villages → Treatment group:** PO receives financial payments conditional on chlorine being detected in independent measurements.
-- **25 villages → Control group:** PO continues using the self-reporting app with independent monitoring, but receives no payments.
+- **20 villages → Treatment group:** PO receives financial payments conditional on chlorine being detected in independent measurements.
+- **20 villages → Control group:** PO continues using the self-reporting app with independent monitoring, but receives no payments.
 
 ### 1.5 Outcome Measurement
 
-Each week during the monitoring and treatment periods, independent chlorine measurements are taken at the water point (default 2 per week; configurable via `n_measurements` in `sweep_params.csv`). Each measurement is binary (chlorine detected or not). The weekly outcome is the **proportion of positive measurements**:
+Each week during the monitoring and treatment periods, 2 independent chlorine measurements are taken at the water point. Each measurement is binary (chlorine detected or not). The weekly outcome is the **proportion of positive measurements**:
 
 ```
 Y_it = (1/K) · Σ m_j ∈ {0, 1/K, 2/K, ..., 1}
@@ -184,7 +183,7 @@ t = ATT_hat / SE
 Reject H₀ if p-value < 0.05 (two-sided)
 ```
 
-The t-test uses Satterthwaite degrees of freedom, which is more appropriate than a z-test when each arm has only 25 clusters.
+The t-test uses Satterthwaite degrees of freedom, which is more appropriate than a z-test when each arm has only 20 clusters.
 
 ### 3.4 Verification
 
@@ -226,23 +225,18 @@ Default sweep ranges:
 | Parameter | Description | Values | Count |
 |-----------|-------------|--------|-------|
 | `mu_baseline` | Baseline Compliance Rate | 0.2, 0.3, 0.4, 0.5, 0.6, 0.7 | 6 |
-| `sigma_baseline` | Compliance Heterogeneity (SD) | 0.10, 0.15, 0.20, 0.25 | 4 |
 | `target_att` | Target Effect on Chlorination Rate | 0.02, 0.05, 0.08, 0.10, 0.12, 0.15, 0.20, 0.25, 0.30, 0.40 | 10 |
 | `rho` | Behavioral Persistence (AR1) | 0.5, 0.7, 0.9 | 3 |
-| `h_init` | Initial Monitoring Effect | -0.10, -0.05, 0, +0.05, +0.10 | 5 |
-| `mu_baseline_ap` | AP Baseline (pooled mode) | 0.3, 0.5, 0.7 | 3 |
-| `mu_baseline_od` | Odisha Baseline (pooled mode) | 0.3, 0.5, 0.7 | 3 |
-| `effect_ratio` | Odisha/AP Effect Ratio (pooled mode) | 0.5, 1.0, 1.5 | 3 |
-| `n_measurements` | Chlorine Tests per Week (comparison mode) | 2, 3 | 2 |
-| `study_end_week` | Study Duration in Weeks (comparison mode) | 26, 52, 78 | 3 |
 
-**Single-state sweep: 6 × 4 × 10 × 3 × 5 = 3,600 parameter combinations × 1,000 simulations = 3,600,000 total simulations.**
+Cross-site heterogeneity (`sigma_baseline`) is derived from `mu_baseline`: σ = 0.8 × √(μ(1−μ)).
+
+**Sweep: 6 × 10 × 3 = 180 parameter combinations × 2 durations = 360 combos × 1,000 simulations = 360,000 total simulations.**
 
 ### 4.3 Key Output: Minimum Detectable Effect (MDE)
 
 The primary output is the **MDE at 80% power** — the smallest target_att value for which the design achieves at least 80% power, for each combination of baseline compliance, behavioral persistence, compliance heterogeneity, and monitoring effect.
 
-For example, an MDE of 0.10 means: "With 50 villages (25 treated, 25 control) and 48 weeks of treatment, we can detect a 10 percentage point increase in chlorination rates with 80% probability."
+For example, an MDE of 0.10 means: "With 40 villages (20 treated, 20 control), we can detect a 10 percentage point increase in chlorination rates with 80% probability."
 
 ---
 
@@ -256,60 +250,29 @@ pip install -r requirements.txt
 
 Dependencies: numpy, pandas, scipy, matplotlib, seaborn, tqdm.
 
-### 5.2 Running the Pipeline
-
-The simulation runs in four stages:
+### 5.2 Running the Simulation
 
 ```bash
-# Stage 1: Generate and inspect an example panel dataset
-python generate_data.py
-# -> output/example_panel.csv
-# -> output/plots/example_panel_timeseries.png
+# Run power sweep and output MDE tables
+python run_simulation.py --n_sims 1000
 
-# Stage 2: Estimate ATT on the example panel
-python estimate.py --panel output/example_panel.csv
-
-# Stage 3: Run the full power sweep (HPC recommended)
-python run_power_sweep.py --n_sims 1000
-
-# Stage 4: Generate all plots and MDE table
-python visualize.py
-# -> output/power_results.csv
-# -> output/mde_table.csv
-# -> output/plots/power_curves_*.png
-# -> output/plots/power_heatmap_*.png
-# -> output/plots/mde_summary.png
+# Quick test (fewer sims, faster):
+python run_simulation.py --n_sims 100
 ```
+
+Output:
+- MDE tables printed to console (rows = baseline compliance, columns = AR(1) persistence)
+- `output/power_results.csv` — raw power estimates for all parameter combos
+- `output/mde_table_6_months.csv` — MDE table for 6-month duration
+- `output/mde_table_1_year.csv` — MDE table for 1-year duration
 
 ### 5.3 HPC Usage (SLURM)
 
-The full sweep (3.6M simulations) should be run on an HPC cluster. The included `submit_hpc.sh` is configured for the UChicago RCC MidwaySSD partition:
+For full precision (1,000 sims), use the HPC cluster. The included `submit_hpc.sh` is configured for the UChicago RCC MidwaySSD partition:
 
 ```bash
-# Upload to HPC
-scp POIncentivesPowerSim.tar.gz user@midway3.rcc.uchicago.edu:/path/to/
-# On HPC: untar, install deps, submit
-tar -xzf POIncentivesPowerSim.tar.gz
-cd POIncentivesPowerSim
-pip install -r requirements.txt
 sbatch submit_hpc.sh
 ```
-
-The SLURM script splits the 3,600 parameter combinations across 5 array tasks, each using a full node (48 cores, 192 GB RAM). After all tasks complete:
-
-```bash
-# On HPC: merge results
-python run_power_sweep.py --merge_chunks --n_chunks 5
-
-# Generate plots on HPC or download and run locally
-python visualize.py
-```
-
-**Resource allocation rationale:**
-- ssd partition: 48 cores/node, 192 GB RAM/node, max 5 nodes/user
-- 5 array tasks × 48 cores = 240 CPUs (the per-user maximum)
-- Each task processes 720 parameter combos with Python multiprocessing across 48 cores
-- Estimated wall time: 1–2 hours per task
 
 ---
 
@@ -317,13 +280,9 @@ python visualize.py
 
 | File | Description |
 |------|-------------|
-| `output/example_panel.csv` | One simulated panel dataset for inspection (1 parameter combo) |
-| `output/power_results.csv` | Power estimates for all 3,600 parameter combos |
-| `output/mde_table.csv` | Minimum detectable effects at 80% power |
-| `output/plots/example_panel_timeseries.png` | Time series of 6 example sites |
-| `output/plots/power_curves_*.png` | Power vs. target effect size, by persistence and monitoring effect |
-| `output/plots/power_heatmap_*.png` | Power heatmaps (baseline compliance × target effect) |
-| `output/plots/mde_summary.png` | MDE summary bar chart |
+| `output/power_results.csv` | Power estimates for all parameter combos and both durations |
+| `output/mde_table_6_months.csv` | MDE at 80% power for 6-month study |
+| `output/mde_table_1_year.csv` | MDE at 80% power for 1-year study |
 
 ---
 
@@ -333,16 +292,13 @@ python visualize.py
 |------|---------|
 | `sweep_params.csv` | **Single source of truth** for all parameter sweep ranges — edit this to change what gets swept |
 | `config.py` | Loads `sweep_params.csv`, defines parameter grids, constants, installation schedules |
-| `generate_data.py` | Data generating process — single-state and pooled multi-state panels |
-| `estimate.py` | Difference-in-differences estimator — single-state and pooled with state FE |
-| `run_power_sweep.py` | Parallel power sweep with `--pooled` and `--hpc` modes |
-| `run_comparison_sweep.py` | Comprehensive comparison sweep (AP vs pooled, measurements, durations) |
-| `visualize.py` | Single-state and pooled plots and MDE tables |
-| `visualize_comparison.py` | Comparison plots: MDE over time, power gain from pooling |
-| `submit_hpc.sh` | SLURM job submission script for UChicago RCC (supports `--comparison`, `--pooled`) |
-| `INSTRUCTIONS.md` | Step-by-step guide for running on HPC |
+| `generate_data.py` | Data generating process — staggered rollout panel generation |
+| `estimate.py` | Difference-in-differences estimator |
+| `run_simulation.py` | **Main entry point** — runs power sweep and outputs MDE tables |
+| `run_power_sweep.py` | Lower-level parallel sweep with `--hpc` mode |
+| `visualize.py` | Plots and MDE tables from power results |
+| `submit_hpc.sh` | SLURM job submission script for UChicago RCC |
 | `requirements.txt` | Python dependencies |
-| `docs/` | Reference documentation for the HPC partition |
 
 ---
 
@@ -354,4 +310,4 @@ python visualize.py
 
 3. **Finite-horizon reparameterization.** The parameter sweep is expressed in terms of the target dynamic ATT (the actual effect on chlorination rates the estimator recovers), not the per-period behavioral impulse τ. The per-period impulse is back-calculated using the finite-horizon AR(1) amplification formula, accounting for the specific treatment duration.
 
-4. **Noisy AR(1) feedback.** The AR(1) process feeds back the observed outcome Y (average of 3 Bernoulli draws), not the latent propensity p. This is behaviorally realistic: the PO observes his actual chlorination behavior, not his latent inclination.
+4. **Noisy AR(1) feedback.** The AR(1) process feeds back the observed outcome Y (average of 2 Bernoulli draws), not the latent propensity p. This is behaviorally realistic: the PO observes his actual chlorination behavior, not his latent inclination.
