@@ -30,8 +30,6 @@ from estimate import run_single_sim
 
 DEFAULT_WORKERS = min(6, cpu_count())
 
-H_INIT = 0.0
-
 
 def run_power_for_combo(args):
     params, n_sims, base_seed = args
@@ -48,6 +46,7 @@ def run_power_for_combo(args):
         'mu_baseline': params['mu_baseline'],
         'target_att': params['target_att'],
         'rho': params['rho'],
+        'h_init': params['h_init'],
         'study_end_week': params['study_end_week'],
         'power': np.nanmean(rej_arr),
         'mean_att': np.nanmean(att_arr),
@@ -55,26 +54,24 @@ def run_power_for_combo(args):
     }
 
 
-def compute_mde(power_df, mu_baseline, rho):
-    sub = power_df[
-        (power_df['mu_baseline'] == mu_baseline) & (power_df['rho'] == rho)
-    ].sort_values('target_att')
-
-    powers = sub['power'].values
-    target_atts = sub['target_att'].values
-
+def _interpolate_mde(target_atts, powers):
     if not (powers >= 0.80).any():
         return np.nan
-
     first_idx = np.where(powers >= 0.80)[0][0]
     if first_idx == 0:
         return target_atts[0]
-
     p_lo, p_hi = powers[first_idx - 1], powers[first_idx]
     t_lo, t_hi = target_atts[first_idx - 1], target_atts[first_idx]
     if p_hi > p_lo:
         return t_lo + (0.80 - p_lo) / (p_hi - p_lo) * (t_hi - t_lo)
     return t_hi
+
+
+def compute_mde(power_df, mu_baseline, rho):
+    sub = power_df[
+        (power_df['mu_baseline'] == mu_baseline) & (power_df['rho'] == rho)
+    ].sort_values('target_att')
+    return _interpolate_mde(sub['target_att'].values, sub['power'].values)
 
 
 def format_mde_table(power_df, mu_baselines, rhos):
@@ -102,18 +99,19 @@ def main():
     mu_baselines = sorted(PARAM_GRID['mu_baseline'])
     target_atts = sorted(PARAM_GRID['target_att'])
     rhos = sorted(PARAM_GRID['rho'])
+    h_inits = sorted(PARAM_GRID['h_init'])
 
     tasks = []
     combo_idx = 0
     for study_end_week in STUDY_DURATIONS.values():
-        for combo in itertools.product(mu_baselines, target_atts, rhos):
-            mu, target_att, rho = combo
+        for combo in itertools.product(mu_baselines, target_atts, rhos, h_inits):
+            mu, target_att, rho, h_init = combo
             params = {
                 'mu_baseline': mu,
                 'sigma_baseline': sigma_from_mu(mu),
                 'target_att': target_att,
                 'rho': rho,
-                'h_init': H_INIT,
+                'h_init': h_init,
                 'study_end_week': study_end_week,
             }
             base_seed = SEED + combo_idx * args.n_sims
@@ -128,6 +126,7 @@ def main():
     print(f"Durations: {', '.join(STUDY_DURATIONS.keys())}")
     print(f"Baseline compliance: {mu_baselines}")
     print(f"AR(1) persistence: {rhos}")
+    print(f"Hawthorne effect: {h_inits}")
     print(f"Target effects: {target_atts}")
     print(f"Combos: {len(tasks)} | Sims/combo: {args.n_sims} | "
           f"Total: {len(tasks) * args.n_sims:,}")
@@ -148,29 +147,33 @@ def main():
 
     print(f"\nCompleted in {elapsed:.1f}s ({elapsed / 60:.1f} min)\n")
 
+    saved_paths = []
     for label, study_end_week in STUDY_DURATIONS.items():
-        duration_df = df[df['study_end_week'] == study_end_week]
-        table = format_mde_table(duration_df, mu_baselines, rhos)
+        for h_init in h_inits:
+            subset = df[(df['study_end_week'] == study_end_week) &
+                        (df['h_init'] == h_init)]
+            table = format_mde_table(subset, mu_baselines, rhos)
 
-        display = table.copy()
-        for col in display.columns:
-            display[col] = display[col].apply(
-                lambda v: f'{v:.3f}' if pd.notna(v) else '>0.40')
+            display = table.copy()
+            for col in display.columns:
+                display[col] = display[col].apply(
+                    lambda v: f'{v:.3f}' if pd.notna(v) else '>0.40')
 
-        print(f"MDE at 80% Power — {label} "
-              f"(n={AP_CONFIG['n_sites']}, 2 tests/week)")
-        print("=" * 55)
-        print(display.to_string())
-        print()
+            h_label = f'h_init={h_init:+.2f}'
+            print(f"MDE at 80% Power — {label}, {h_label} "
+                  f"(n={AP_CONFIG['n_sites']}, 2 tests/week)")
+            print("=" * 65)
+            print(display.to_string())
+            print()
 
-        csv_path = os.path.join(
-            args.output_dir, f'mde_table_{label.replace(" ", "_")}.csv')
-        table.to_csv(csv_path)
+            slug = f'{label.replace(" ", "_")}_h{h_init:+.2f}'.replace('+', 'pos').replace('-', 'neg')
+            csv_path = os.path.join(args.output_dir, f'mde_table_{slug}.csv')
+            table.to_csv(csv_path)
+            saved_paths.append(csv_path)
 
     print(f"Raw results: {raw_path}")
-    for label in STUDY_DURATIONS:
-        print(f"MDE table ({label}): "
-              f"{os.path.join(args.output_dir, f'mde_table_{label.replace(chr(32), chr(95))}.csv')}")
+    for p in saved_paths:
+        print(f"  {p}")
 
 
 if __name__ == '__main__':

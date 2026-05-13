@@ -80,6 +80,7 @@ PARAM_GRID = {
     'mu_baseline': _SWEEP['mu_baseline'],
     'target_att': _SWEEP['target_att'],
     'rho': _SWEEP['rho'],
+    'h_init': _SWEEP['h_init'],
 }
 
 STUDY_DURATIONS = {'6 months': 26, '1 year': 52}
